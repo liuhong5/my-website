@@ -927,34 +927,47 @@
           return;
         }
         
-        // 按浇水次数排序
+        // 按浇水次数排序（降序）
         const sortedFlowers = [...appData.flowers].sort((a, b) => b.waterCount - a.waterCount);
         
         sortedFlowers.forEach((flower, index) => {
-          const rankClass = index < 3 
-            ? (index === 0 ? 'bg-yellow-100 text-yellow-800' : 
-               index === 1 ? 'bg-gray-100 text-gray-800' : 
-               'bg-amber-100 text-amber-800') 
-            : 'bg-gray-50';
-          
-          const rankIcon = index < 3 
-            ? `<i class="fa fa-trophy mr-2"></i>` 
-            : `<span class="w-5 inline-block text-center mr-1">${index + 1}</span>`;
-          
           const rankEl = document.createElement('div');
-          rankEl.className = `p-3 rounded-lg flex justify-between items-center ${rankClass}`;
+          rankEl.className = 'p-3 bg-gray-50 rounded-lg flex items-center gap-3';
+          
+          // 前三名显示奖牌图标
+          let rankIcon = '';
+          if (index === 0) {
+            rankIcon = '<i class="fa fa-trophy text-yellow-500 text-xl"></i>';
+          } else if (index === 1) {
+            rankIcon = '<i class="fa fa-trophy text-gray-400 text-xl"></i>';
+          } else if (index === 2) {
+            rankIcon = '<i class="fa fa-trophy text-amber-700 text-xl"></i>';
+          } else {
+            rankIcon = `<span class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium">${index + 1}</span>`;
+          }
+          
           rankEl.innerHTML = `
-            <div class="flex items-center">
-              ${rankIcon}
-              <span>${flower.name}</span>
+            ${rankIcon}
+            <div class="flex-1">
+              <div class="font-medium">${flower.name}</div>
+              <div class="text-sm text-gray-500">浇水 ${flower.waterCount} 次</div>
             </div>
-            <span class="font-medium">${flower.waterCount} 次浇水</span>
+            <div class="w-16 h-16 flex items-center justify-center">
+              <div class="relative">
+                <div class="flower-pot w-8 h-5 bg-amber-700 mx-auto"></div>
+                <div class="w-0.5 h-6 bg-green-600 mx-auto -mt-0.5"></div>
+                <div class="relative -mt-1">
+                  ${this.generateMiniFlower(flower.waterCount)}
+                </div>
+              </div>
+            </div>
           `;
+          
           elements.flowerRanking.appendChild(rankEl);
         });
       },
       
-      // 渲染花圈统计（显示每次分数）
+      // 渲染花圈统计
       wreathStats() {
         elements.wreathStats.innerHTML = '';
         
@@ -964,74 +977,62 @@
         }
         
         appData.wreaths.forEach(wreath => {
-          const wreathEl = document.createElement('div');
-          wreathEl.className = 'p-3 bg-white border border-gray-100 rounded-lg shadow-sm';
+          // 计算总分数
+          const totalScore = wreath.scoreLogs?.reduce((sum, log) => sum + parseInt(log.score), 0) || 0;
           
-          let scoresHtml = '';
-          if (wreath.scoreLogs && wreath.scoreLogs.length > 0) {
-            // 正序显示分数记录
-            wreath.scoreLogs.forEach((log, index) => {
-              scoresHtml += `
-                <div class="text-sm pl-4 py-1 border-l-2 border-secondary/30">
-                  <div class="flex justify-between">
-                    <span>第 ${index + 1} 次: ${log.score} 分</span>
-                    <span class="text-gray-500">${utils.formatDate(log.dateTime)}</span>
-                  </div>
-                </div>
-              `;
-            });
-          } else {
-            scoresHtml = '<p class="text-gray-500 text-sm italic">暂无分数记录</p>';
-          }
-          
-          wreathEl.innerHTML = `
-            <h4 class="font-medium mb-2 flex items-center">
-              <i class="fa fa-circle text-xs text-secondary mr-2"></i>
-              ${wreath.name}
-            </h4>
-            <div class="text-sm text-gray-600 mb-2">
-              花朵数量: ${wreath.flowers.length}
-            </div>
-            <div class="mt-2">
-              <div class="text-sm font-medium mb-1">分数记录:</div>
-              ${scoresHtml}
+          const statEl = document.createElement('div');
+          statEl.className = 'p-3 bg-gray-50 rounded-lg';
+          statEl.innerHTML = `
+            <div class="font-medium mb-1">${wreath.name}</div>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-500">花朵数量:</span>
+                <span class="font-medium">${wreath.flowers.length}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">分数记录:</span>
+                <span class="font-medium">${wreath.scoreLogs?.length || 0}</span>
+              </div>
+              <div class="flex justify-between col-span-2 mt-1 pt-1 border-t border-gray-100">
+                <span class="text-gray-500">总分数:</span>
+                <span class="font-semibold text-secondary">${totalScore}</span>
+              </div>
             </div>
           `;
-          elements.wreathStats.appendChild(wreathEl);
+          
+          elements.wreathStats.appendChild(statEl);
         });
       },
       
-      // 更新编辑员权限显示
+      // 更新编辑员权限相关UI
       updateEditorUI() {
-        // 显示或隐藏编辑员功能按钮
+        // 显示/隐藏编辑员专用按钮
         document.querySelectorAll('.editor-only').forEach(el => {
           el.classList.toggle('hidden', !appData.isEditor);
         });
         
-        // 重新渲染需要编辑员权限的区域
-        this.wreaths();
-        this.currentWreath();
-        this.flower();
-        this.wreathStats();
+        // 重新渲染当前页面
+        if (elements.flowerSection.classList.contains('hidden') === false) {
+          this.flower();
+        } else if (elements.wreathSection.classList.contains('hidden') === false) {
+          this.currentWreath();
+        }
       }
     };
 
     // 事件监听
     function setupEventListeners() {
-      // 导航按钮切换
+      // 导航切换
       elements.flowerBtn.addEventListener('click', () => {
         elements.flowerSection.classList.remove('hidden');
         elements.wreathSection.classList.add('hidden');
         elements.rankingSection.classList.add('hidden');
         
-        elements.flowerBtn.classList.add('bg-primary/10', 'text-primary');
-        elements.flowerBtn.classList.remove('bg-white', 'text-dark');
+        elements.flowerBtn.className = 'px-3 py-1.5 rounded-md bg-primary/10 text-primary font-medium hover:bg-primary/20 transition';
+        elements.wreathBtn.className = 'px-3 py-1.5 rounded-md bg-white text-dark font-medium hover:bg-gray-100 transition';
+        elements.rankingBtn.className = 'px-3 py-1.5 rounded-md bg-white text-dark font-medium hover:bg-gray-100 transition';
         
-        elements.wreathBtn.classList.add('bg-white', 'text-dark');
-        elements.wreathBtn.classList.remove('bg-primary/10', 'text-primary');
-        
-        elements.rankingBtn.classList.add('bg-white', 'text-dark');
-        elements.rankingBtn.classList.remove('bg-primary/10', 'text-primary');
+        render.flower();
       });
       
       elements.wreathBtn.addEventListener('click', () => {
@@ -1039,16 +1040,11 @@
         elements.wreathSection.classList.remove('hidden');
         elements.rankingSection.classList.add('hidden');
         
-        elements.flowerBtn.classList.add('bg-white', 'text-dark');
-        elements.flowerBtn.classList.remove('bg-primary/10', 'text-primary');
+        elements.flowerBtn.className = 'px-3 py-1.5 rounded-md bg-white text-dark font-medium hover:bg-gray-100 transition';
+        elements.wreathBtn.className = 'px-3 py-1.5 rounded-md bg-secondary/10 text-secondary font-medium hover:bg-secondary/20 transition';
+        elements.rankingBtn.className = 'px-3 py-1.5 rounded-md bg-white text-dark font-medium hover:bg-gray-100 transition';
         
-        elements.wreathBtn.classList.add('bg-primary/10', 'text-primary');
-        elements.wreathBtn.classList.remove('bg-white', 'text-dark');
-        
-        elements.rankingBtn.classList.add('bg-white', 'text-dark');
-        elements.rankingBtn.classList.remove('bg-primary/10', 'text-primary');
-        
-        render.flowerSelect();
+        render.currentWreath();
       });
       
       elements.rankingBtn.addEventListener('click', () => {
@@ -1056,34 +1052,23 @@
         elements.wreathSection.classList.add('hidden');
         elements.rankingSection.classList.remove('hidden');
         
-        elements.flowerBtn.classList.add('bg-white', 'text-dark');
-        elements.flowerBtn.classList.remove('bg-primary/10', 'text-primary');
-        
-        elements.wreathBtn.classList.add('bg-white', 'text-dark');
-        elements.wreathBtn.classList.remove('bg-primary/10', 'text-primary');
-        
-        elements.rankingBtn.classList.add('bg-primary/10', 'text-primary');
-        elements.rankingBtn.classList.remove('bg-white', 'text-dark');
+        elements.flowerBtn.className = 'px-3 py-1.5 rounded-md bg-white text-dark font-medium hover:bg-gray-100 transition';
+        elements.wreathBtn.className = 'px-3 py-1.5 rounded-md bg-white text-dark font-medium hover:bg-gray-100 transition';
+        elements.rankingBtn.className = 'px-3 py-1.5 rounded-md bg-accent/10 text-accent font-medium hover:bg-accent/20 transition';
         
         render.flowerRanking();
         render.wreathStats();
       });
       
-      // 花朵搜索
-      elements.flowerSearch.addEventListener('input', (e) => {
-        render.allFlowersList(e.target.value);
-      });
-      
-      // 添加新花
+      // 花朵管理
       elements.addFlowerBtn.addEventListener('click', () => {
         appData.addNewFlower();
-        render.allFlowersList();
+        render.allFlowersList(elements.flowerSearch.value);
         render.flower();
-        render.flowersList();
         render.flowerSelect();
+        render.flowerRanking();
       });
       
-      // 保存花朵名称
       elements.saveNameBtn.addEventListener('click', () => {
         const flower = utils.getCurrentFlower();
         if (flower && elements.flowerName.value.trim()) {
@@ -1091,23 +1076,21 @@
           appData.saveData();
           render.flower();
           render.allFlowersList(elements.flowerSearch.value);
-          render.flowersList();
           render.flowerSelect();
           render.flowerRanking();
         }
       });
       
-      // 浇花
       elements.waterBtn.addEventListener('click', () => {
         const flower = utils.getCurrentFlower();
         if (flower) {
           flower.waterCount++;
           flower.growthLog.push({
-            count: flower.waterCount,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            count: flower.waterCount
           });
           
-          // 添加动画效果
+          // 添加生长动画
           elements.flower.classList.add('grow-animation');
           setTimeout(() => {
             elements.flower.classList.remove('grow-animation');
@@ -1121,21 +1104,19 @@
         }
       });
       
-      // 删除花朵
       elements.deleteFlowerBtn.addEventListener('click', () => {
         const flower = utils.getCurrentFlower();
         if (flower && confirm(`确定要删除花朵"${flower.name}"吗？`)) {
           appData.deleteFlower(flower.id);
           render.allFlowersList(elements.flowerSearch.value);
           render.flower();
-          render.flowersList();
           render.flowerSelect();
           render.flowerRanking();
           render.wreathStats();
         }
       });
       
-      // 添加花圈
+      // 花圈管理
       elements.addWreathBtn.addEventListener('click', () => {
         const name = elements.wreathName.value.trim();
         if (name) {
@@ -1147,7 +1128,6 @@
         }
       });
       
-      // 删除花圈
       elements.deleteWreathBtn.addEventListener('click', () => {
         const wreath = utils.getCurrentWreath();
         if (wreath && confirm(`确定要删除花圈"${wreath.name}"吗？`)) {
@@ -1158,7 +1138,6 @@
         }
       });
       
-      // 添加花朵到花圈
       elements.addFlowerToWreathBtn.addEventListener('click', () => {
         const flowerId = elements.flowerToAdd.value;
         if (flowerId) {
@@ -1169,27 +1148,31 @@
         }
       });
       
-      // 添加分数到花圈
       elements.addScoreToWreathBtn.addEventListener('click', () => {
         const score = parseInt(elements.wreathScoreToAdd.value);
         if (score && score > 0) {
-          const dateTime = elements.scoreDateTime.value ? new Date(elements.scoreDateTime.value).toISOString() : null;
+          const dateTime = elements.scoreDateTime.value;
           appData.addScoreToWreath(score, dateTime);
           elements.wreathScoreToAdd.value = '';
-          elements.scoreDateTime.value = '';
           render.currentWreath();
           render.wreathStats();
         }
       });
       
-      // 编辑员按钮
+      // 花朵搜索
+      elements.flowerSearch.addEventListener('input', (e) => {
+        render.allFlowersList(e.target.value);
+      });
+      
+      // 编辑员认证
       elements.editorBtn.addEventListener('click', () => {
         if (appData.isEditor) {
-          // 已登录，退出编辑模式
-          appData.isEditor = false;
-          appData.saveData();
-          render.updateEditorUI();
-          alert('已退出编辑员模式');
+          // 已登录，显示退出确认
+          if (confirm('确定要退出编辑员模式吗？')) {
+            appData.isEditor = false;
+            appData.saveData();
+            render.updateEditorUI();
+          }
         } else {
           // 未登录，显示登录模态框
           elements.editorModal.classList.remove('hidden');
@@ -1198,19 +1181,16 @@
         }
       });
       
-      // 确认编辑员登录
       elements.confirmEditorBtn.addEventListener('click', () => {
         const password = elements.editorPassword.value;
         if (appData.verifyEditorPassword(password)) {
           elements.editorModal.classList.add('hidden');
           render.updateEditorUI();
-          alert('编辑员登录成功');
         } else {
           alert('密码错误，请重试');
         }
       });
       
-      // 取消编辑员登录
       elements.cancelEditorBtn.addEventListener('click', () => {
         elements.editorModal.classList.add('hidden');
       });
@@ -1222,7 +1202,7 @@
         }
       });
       
-      // 初始化日期时间为当前时间
+      // 设置默认日期时间为当前时间
       elements.scoreDateTime.value = new Date().toISOString().slice(0, 16);
     }
 
@@ -1231,19 +1211,22 @@
       appData.loadData();
       setupEventListeners();
       
-      // 初始渲染
+      // 初始化渲染
       render.allFlowersList();
       render.flower();
       render.wreaths();
       render.currentWreath();
-      render.updateEditorUI();
+      render.flowerSelect();
+      render.flowerRanking();
+      render.wreathStats();
       
-      // 默认显示花朵页面
-      elements.flowerBtn.click();
+      // 更新编辑员UI
+      render.updateEditorUI();
     }
 
     // 启动应用
     initApp();
   </script>
 </body>
+
 </html>
