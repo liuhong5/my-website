@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>花朵成长记</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- 配置Tailwind -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#4ade80',
+            secondary: '#818cf8',
+            accent: '#f97316',
+            neutral: '#f8fafc',
+            dark: '#334155'
+          },
+          fontFamily: {
+            inter: ['Inter', 'sans-serif'],
+          },
+        },
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .flower-pot {
+        border-radius: 0 0 2rem 2rem;
+      }
+      .petal {
+        border-radius: 100% 0;
+        transform-origin: bottom right;
+      }
+      .btn-bounce {
+        transition: transform 0.2s ease;
+      }
+      .btn-bounce:active {
+        transform: scale(0.95);
+      }
+      .grow-animation {
+        animation: grow 0.5s ease-out forwards;
+      }
+      .fade-in {
+        animation: fadeIn 0.3s ease-in forwards;
+      }
+      @keyframes grow {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+    }
+  </style>
+</head>
+<body class="font-inter bg-gradient-to-br from-green-50 to-blue-50 min-h-screen text-dark">
+  <!-- 顶部导航 -->
+  <header class="bg-white/80 backdrop-blur-md shadow-sm fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center gap-2">
+        <i class="fa fa-leaf text-primary text-2xl"></i>
+        <h1 class="text-xl font-semibold text-dark">花朵成长记</h1>
+      </div>
+      <nav class="flex gap-4">
+        <button id="flowerBtn" class="px-3 py-1.5 rounded-md bg-primary/10 text-primary font-medium hover:bg-primary/20 transition">
+          <i class="fa fa-pagelines mr-1"></i>我的花
+        </button>
+        <button id="wreathBtn" class="px-3 py-1.5 rounded-md bg-white text-dark font-medium hover:bg-gray-100 transition">
+          <i class="fa fa-th mr-1"></i>花圈
+        </button>
+        <button id="rankingBtn" class="px-3 py-1.5 rounded-md bg-white text-dark font-medium hover:bg-gray-100 transition">
+          <i class="fa fa-trophy mr-1"></i>排行榜
+        </button>
+        <button id="editorBtn" class="px-3 py-1.5 rounded-md bg-white text-dark font-medium hover:bg-gray-100 transition">
+          <i class="fa fa-key mr-1"></i>编辑员
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="container mx-auto px-4 pt-24 pb-16">
+    <!-- 花朵管理区域 -->
+    <section id="flowerSection" class="fade-in">
+      <div class="max-w-6xl mx-auto">
+        <div class="flex flex-col md:flex-row gap-6">
+          <!-- 左侧花朵列表 -->
+          <div class="w-full md:w-1/4">
+            <div class="bg-white rounded-xl shadow-md p-5">
+              <h3 class="text-lg font-semibold mb-3">花朵列表</h3>
+              <div class="mb-3 editor-only">
+                <input type="text" id="flowerSearch" placeholder="搜索花朵..." 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-sm">
+              </div>
+              <div id="allFlowersList" class="space-y-2 max-h-[calc(100vh-240px)] overflow-y-auto pr-2">
+                <!-- 花朵名称列表将通过JS动态生成 -->
+              </div>
+            </div>
+          </div>
+          
+          <!-- 右侧花朵详情 -->
+          <div class="w-full md:w-3/4">
+            <!-- 花朵管理工具栏 -->
+            <div class="bg-white rounded-xl shadow-md p-5 mb-6 flex justify-between items-center">
+              <h2 class="text-lg font-semibold">我的花朵们</h2>
+              <button id="addFlowerBtn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition btn-bounce flex items-center gap-1 editor-only hidden">
+                <i class="fa fa-plus"></i>
+                <span>添加新花</span>
+              </button>
+            </div>
+            
+            <!-- 当前选中花朵详情 -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+              <h3 id="displayFlowerName" class="text-xl font-medium mb-4">请选择一朵花</h3>
+              <div class="flex justify-center items-end mb-4 h-64">
+                <div id="flowerContainer" class="relative">
+                  <!-- 花盆 -->
+                  <div class="flower-pot w-24 h-16 bg-amber-700 mx-auto"></div>
+                  
+                  <!-- 花茎 -->
+                  <div id="stem" class="w-2 h-16 bg-green-600 mx-auto -mt-1"></div>
+                  
+                  <!-- 花朵 -->
+                  <div id="flower" class="relative -mt-1">
+                    <!-- 花瓣将通过JS动态生成 -->
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 花朵操作 -->
+              <div class="flex flex-col sm:flex-row gap-3 justify-center mb-4 editor-only hidden">
+                <div class="flex gap-3 w-full sm:w-auto">
+                  <input type="text" id="flowerName" placeholder="输入花的名字..." 
+                        class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                  <button id="saveNameBtn" class="px-5 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition btn-bounce" disabled>
+                    保存名称
+                  </button>
+                </div>
+                <div class="flex gap-3 w-full sm:w-auto justify-center sm:justify-start">
+                  <button id="waterBtn" class="px-6 py-2 bg-blue-500 text-white rounded-full shadow-md hover:bg-blue-600 transition btn-bounce flex items-center gap-2" disabled>
+                    <i class="fa fa-tint"></i>
+                    <span>浇花</span>
+                  </button>
+                  <button id="deleteFlowerBtn" class="px-6 py-2 bg-red-500 text-white rounded-full shadow-md hover:bg-red-600 transition btn-bounce flex items-center gap-2" disabled>
+                    <i class="fa fa-trash"></i>
+                    <span>删除</span>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- 浇花次数 -->
+              <div class="mt-4 text-gray-600 text-center">
+                <span>已浇水: </span>
+                <span id="waterCount" class="font-semibold text-primary">0</span>
+                <span> 次</span>
+              </div>
+              
+              <!-- 成长记录 -->
+              <div class="mt-6">
+                <h3 class="text-lg font-semibold mb-4">成长记录</h3>
+                <div id="growthLog" class="space-y-2 max-h-40 overflow-y-auto pr-2">
+                  <p class="text-gray-500 text-center italic">请选择一朵花查看记录</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- 花圈管理区域 -->
+    <section id="wreathSection" class="hidden fade-in">
+      <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+          <h2 class="text-lg font-semibold mb-4">我的花圈</h2>
+          
+          <!-- 花圈选择 -->
+          <div class="mb-6">
+            <div class="flex gap-3 mb-3 editor-only hidden">
+              <input type="text" id="wreathName" placeholder="输入花圈名称..." 
+                    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary/50 focus:border-secondary">
+              <button id="addWreathBtn" class="px-5 py-2 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition btn-bounce">
+                添加花圈
+              </button>
+            </div>
+            
+            <div id="wreathList" class="flex flex-wrap gap-2">
+              <!-- 花圈选项将通过JS动态生成 -->
+            </div>
+          </div>
+          
+          <!-- 花圈内容 -->
+          <div id="currentWreathContainer" class="border border-gray-200 rounded-lg p-4">
+            <div class="flex justify-between items-center mb-3">
+              <h3 id="currentWreathName" class="font-medium text-secondary">请选择一个花圈</h3>
+              <button id="deleteWreathBtn" class="px-3 py-1 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500/20 transition btn-bounce text-sm editor-only hidden">
+                <i class="fa fa-trash mr-1"></i>删除花圈
+              </button>
+            </div>
+            
+            <!-- 花圈分数操作 -->
+            <div class="mb-4 editor-only hidden">
+              <div class="flex flex-col sm:flex-row gap-3 mb-4">
+                <input type="number" id="wreathScoreToAdd" placeholder="添加分数..." min="1" 
+                      class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary/50 focus:border-secondary">
+                <input type="datetime-local" id="scoreDateTime" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary/50 focus:border-secondary">
+                <button id="addScoreToWreathBtn" class="px-5 py-2 bg-secondary/80 text-white rounded-lg hover:bg-secondary transition btn-bounce" disabled>
+                  添加分数
+                </button>
+              </div>
+              
+              <!-- 添加花朵到花圈 -->
+              <select id="flowerToAdd" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary/50 focus:border-secondary mb-3">
+                <option value="">选择要添加的花...</option>
+              </select>
+              
+              <button id="addFlowerToWreathBtn" class="px-5 py-2 bg-secondary/80 text-white rounded-lg hover:bg-secondary transition btn-bounce" disabled>
+                添加到花圈
+              </button>
+            </div>
+            
+            <!-- 花圈中的花朵列表 -->
+            <div>
+              <h4 class="font-medium mb-2">花圈中的花朵</h4>
+              <div id="flowersInWreath" class="space-y-2 max-h-32 overflow-y-auto pr-2">
+                <p class="text-gray-500 text-center italic">花圈为空</p>
+              </div>
+              
+              <!-- 分数记录 -->
+              <div class="mt-4">
+                <h4 class="font-medium mb-2">分数记录</h4>
+                <div id="scoreLog" class="space-y-2 max-h-32 overflow-y-auto pr-2">
+                  <p class="text-gray-500 text-center italic">暂无分数记录</p>
+                </div>
+              </div>
+              
+              <!-- 分数统计 -->
+              <div class="mt-4 pt-4 border-t border-gray-100">
+                <div class="flex justify-between items-center">
+                  <span class="font-medium">花朵数量:</span>
+                  <span id="flowerCountInWreath" class="text-lg font-semibold text-accent">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- 排行榜区域 -->
+    <section id="rankingSection" class="hidden fade-in">
+      <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+          <h2 class="text-lg font-semibold mb-6">排行榜与统计</h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- 花朵排名 -->
+            <div>
+              <h3 class="text-md font-medium mb-4 flex items-center">
+                <i class="fa fa-trophy text-yellow-500 mr-2"></i>
+                花朵浇水次数排名
+              </h3>
+              <div id="flowerRanking" class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                <!-- 排名将通过JS动态生成 -->
+              </div>
+            </div>
+            
+            <!-- 花圈统计 -->
+            <div>
+              <h3 class="text-md font-medium mb-4 flex items-center">
+                <i class="fa fa-bar-chart text-secondary mr-2"></i>
+                花圈统计
+              </h3>
+              <div id="wreathStats" class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                <!-- 花圈统计将通过JS动态生成 -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 页脚 -->
+  <footer class="bg-white/80 backdrop-blur-md py-4 text-center text-gray-500 text-sm">
+    <p>花朵成长记 &copy; 2023 - 记录每一次成长</p>
+  </footer>
+
+  <!-- 编辑员权限模态框 -->
+  <div id="editorModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl p-6 w-full max-w-md">
+      <h3 class="text-xl font-semibold mb-4">编辑员认证</h3>
+      <p class="text-gray-600 mb-4">请输入编辑员密码以获取权限</p>
+      <div class="mb-4">
+        <input type="password" id="editorPassword" placeholder="输入编辑员密码..." 
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+      </div>
+      <div class="flex gap-3">
+        <button id="cancelEditorBtn" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+          取消
+        </button>
+        <button id="confirmEditorBtn" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition">
+          确认
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 数据模型
+    const appData = {
+      flowers: [{
+        id: 1,
+        name: '我的小花',
+        waterCount: 0,
+        growthLog: []
+      }],
+      wreaths: [],
+      currentFlowerId: 1,
+      currentWreathId: null,
+      isEditor: false, // 编辑员状态
+      
+      // 保存数据到本地存储
+      saveData() {
+        localStorage.setItem('flowerAppData', JSON.stringify(this));
+      },
+      
+      // 从本地存储加载数据
+      loadData() {
+        const savedData = localStorage.getItem('flowerAppData');
+        if (savedData) {
+          const parsedData = JSON.parse(savedData);
+          Object.assign(this, parsedData);
+        }
+      },
+      
+      // 添加新花
+      addNewFlower() {
+        const newFlower = {
+          id: this.generateId(),
+          name: `新花${this.flowers.length + 1}`,
+          waterCount: 0,
+          growthLog: []
+        };
+        this.flowers.push(newFlower);
+        this.currentFlowerId = newFlower.id;
+        this.saveData();
+        return newFlower;
+      },
+      
+      // 删除花朵
+      deleteFlower(flowerId) {
+        // 从花朵列表中删除
+        this.flowers = this.flowers.filter(flower => flower.id !== flowerId);
+        
+        // 从所有花圈中移除该花朵
+        this.wreaths.forEach(wreath => {
+          wreath.flowers = wreath.flowers.filter(item => item.flowerId !== flowerId);
+        });
+        
+        // 更新当前选中的花朵
+        if (this.currentFlowerId === flowerId) {
+          this.currentFlowerId = this.flowers.length > 0 ? this.flowers[0].id : null;
+        }
+        
+        this.saveData();
+      },
+      
+      // 添加新花圈
+      addNewWreath(name) {
+        const newWreath = {
+          id: this.generateId(),
+          name,
+          flowers: [],
+          scoreLogs: [] // 分数记录，包含时间
+        };
+        this.wreaths.push(newWreath);
+        this.currentWreathId = newWreath.id;
+        this.saveData();
+        return newWreath;
+      },
+      
+      // 删除花圈
+      deleteWreath(wreathId) {
+        this.wreaths = this.wreaths.filter(wreath => wreath.id !== wreathId);
+        
+        if (this.currentWreathId === wreathId) {
+          this.currentWreathId = this.wreaths.length > 0 ? this.wreaths[0].id : null;
+        }
+        
+        this.saveData();
+      },
+      
+      // 给花圈加分
+      addScoreToWreath(score, dateTime) {
+        const wreath = this.wreaths.find(w => w.id === this.currentWreathId);
+        if (wreath) {
+          // 确保分数记录数组存在
+          if (!wreath.scoreLogs) wreath.scoreLogs = [];
+          
+          // 记录分数和时间
+          const logId = this.generateId();
+          wreath.scoreLogs.push({
+            id: logId,
+            score,
+            dateTime: dateTime || new Date().toISOString()
+          });
+          
+          this.saveData();
+          return {wreath, logId};
+        }
+        return null;
+      },
+      
+      // 从花圈中删除分数记录
+      deleteScoreFromWreath(logId) {
+        const wreath = this.wreaths.find(w => w.id === this.currentWreathId);
+        if (wreath && wreath.scoreLogs) {
+          // 从记录列表中删除
+          wreath.scoreLogs = wreath.scoreLogs.filter(log => log.id !== logId);
+          this.saveData();
+          return true;
+        }
+        return false;
+      },
+      
+      // 添加花朵到花圈
+      addFlowerToWreath(flowerId) {
+        const wreath = this.wreaths.find(w => w.id === this.currentWreathId);
+        const flower = this.flowers.find(f => f.id === flowerId);
+        
+        if (wreath && flower) {
+          // 检查花朵是否已在花圈中
+          const alreadyExists = wreath.flowers.some(item => item.flowerId === flowerId);
+          if (!alreadyExists) {
+            wreath.flowers.push({
+              id: this.generateId(),
+              flowerId: flower.id
+            });
+            this.saveData();
+            return true;
+          }
+        }
+        return false;
+      },
+      
+      // 生成唯一ID
+      generateId() {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+      },
+      
+      // 验证编辑员密码
+      verifyEditorPassword(password) {
+        this.isEditor = password === 'yy666';
+        this.saveData();
+        return this.isEditor;
+      }
+    };
+
+    // DOM元素
+    const elements = {
+      // 原有元素
+      flowerSection: document.getElementById('flowerSection'),
+      wreathSection: document.getElementById('wreathSection'),
+      rankingSection: document.getElementById('rankingSection'),
+      flowerBtn: document.getElementById('flowerBtn'),
+      wreathBtn: document.getElementById('wreathBtn'),
+      rankingBtn: document.getElementById('rankingBtn'),
+      flowerName: document.getElementById('flowerName'),
+      saveNameBtn: document.getElementById('saveNameBtn'),
+      deleteFlowerBtn: document.getElementById('deleteFlowerBtn'),
+      displayFlowerName: document.getElementById('displayFlowerName'),
+      waterBtn: document.getElementById('waterBtn'),
+      waterCount: document.getElementById('waterCount'),
+      flower: document.getElementById('flower'),
+      stem: document.getElementById('stem'),
+      growthLog: document.getElementById('growthLog'),
+      flowersList: document.getElementById('flowersList'),
+      addFlowerBtn: document.getElementById('addFlowerBtn'),
+      wreathName: document.getElementById('wreathName'),
+      addWreathBtn: document.getElementById('addWreathBtn'),
+      wreathList: document.getElementById('wreathList'),
+      currentWreathName: document.getElementById('currentWreathName'),
+      flowerToAdd: document.getElementById('flowerToAdd'),
+      addFlowerToWreathBtn: document.getElementById('addFlowerToWreathBtn'),
+      flowersInWreath: document.getElementById('flowersInWreath'),
+      totalScore: document.getElementById('totalScore'),
+      flowerCountInWreath: document.getElementById('flowerCountInWreath'),
+      wreathScoreToAdd: document.getElementById('wreathScoreToAdd'),
+      addScoreToWreathBtn: document.getElementById('addScoreToWreathBtn'),
+      flowerRanking: document.getElementById('flowerRanking'),
+      wreathStats: document.getElementById('wreathStats'),
+      
+      // 新增元素
+      editorBtn: document.getElementById('editorBtn'),
+      editorModal: document.getElementById('editorModal'),
+      editorPassword: document.getElementById('editorPassword'),
+      confirmEditorBtn: document.getElementById('confirmEditorBtn'),
+      cancelEditorBtn: document.getElementById('cancelEditorBtn'),
+      deleteWreathBtn: document.getElementById('deleteWreathBtn'),
+      scoreDateTime: document.getElementById('scoreDateTime'),
+      scoreLog: document.getElementById('scoreLog'),
+      flowerSearch: document.getElementById('flowerSearch'),
+      allFlowersList: document.getElementById('allFlowersList')
+    };
+
+    // 工具函数
+    const utils = {
+      // 获取当前选中的花
+      getCurrentFlower() {
+        return appData.flowers.find(flower => flower.id === appData.currentFlowerId);
+      },
+      
+      // 获取当前选中的花圈
+      getCurrentWreath() {
+        return appData.wreaths.find(wreath => wreath.id === appData.currentWreathId);
+      },
+      
+      // 格式化日期
+      formatDate(date) {
+        return new Date(date).toLocaleString('zh-CN', {
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      },
+      
+      // 格式化详细日期（用于分数记录）
+      formatDateTime(date) {
+        return new Date(date).toLocaleString('zh-CN', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      },
+      
+      // 过滤花朵列表
+      filterFlowers(query) {
+        if (!query) return appData.flowers;
+        const lowerQuery = query.toLowerCase();
+        return appData.flowers.filter(flower => 
+          flower.name.toLowerCase().includes(lowerQuery)
+        );
+      }
+    };
+
+    // 渲染函数
+    const render = {
+      // 渲染花朵列表（左侧）
+      allFlowersList(query = '') {
+        const filteredFlowers = utils.filterFlowers(query);
+        elements.allFlowersList.innerHTML = '';
+        
+        if (filteredFlowers.length === 0) {
+          elements.allFlowersList.innerHTML = '<p class="text-gray-500 text-sm text-center py-2">没有找到匹配的花朵</p>';
+          return;
+        }
+        
+        filteredFlowers.forEach(flower => {
+          const isActive = appData.currentFlowerId === flower.id;
+          
+          const flowerItem = document.createElement('button');
+          flowerItem.className = `w-full text-left px-3 py-2 rounded-lg text-sm transition ${
+            isActive ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-gray-100'
+          }`;
+          flowerItem.textContent = flower.name;
+          flowerItem.addEventListener('click', () => {
+            appData.currentFlowerId = flower.id;
+            this.flower();
+            this.allFlowersList(elements.flowerSearch.value);
+            appData.saveData();
+          });
+          
+          elements.allFlowersList.appendChild(flowerItem);
+        });
+      },
+      
+      // 渲染花朵列表（卡片式）
+      flowersList() {
+        elements.flowersList.innerHTML = '';
+        
+        appData.flowers.forEach(flower => {
+          const isActive = appData.currentFlowerId === flower.id;
+          
+          const flowerCard = document.createElement('div');
+          flowerCard.className = `bg-white rounded-xl shadow-md p-4 transition-all ${isActive ? 'ring-2 ring-primary' : 'hover:shadow-lg'}`;
+          flowerCard.innerHTML = `
+            <div class="flex justify-between items-start mb-3">
+              <h3 class="font-medium">${flower.name}</h3>
+              <span class="text-sm text-gray-500">浇水 ${flower.waterCount} 次</span>
+            </div>
+            <div class="flex justify-center h-32">
+              <div class="relative">
+                <div class="flower-pot w-16 h-10 bg-amber-700 mx-auto"></div>
+                <div class="w-1.5 h-12 bg-green-600 mx-auto -mt-0.5"></div>
+                <div class="relative -mt-1">
+                  ${this.generateMiniFlower(flower.waterCount)}
+                </div>
+              </div>
+            </div>
+            <button class="select-flower-btn w-full mt-2 py-1.5 rounded-lg ${isActive ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}" 
+                    data-id="${flower.id}">
+              ${isActive ? '当前选中' : '查看详情'}
+            </button>
+          `;
+          
+          elements.flowersList.appendChild(flowerCard);
+          
+          // 添加选择事件
+          flowerCard.querySelector('.select-flower-btn').addEventListener('click', () => {
+            appData.currentFlowerId = flower.id;
+            this.flower();
+            this.flowersList();
+            this.allFlowersList(elements.flowerSearch.value);
+            appData.saveData();
+          });
+        });
+      },
+      
+      // 生成迷你花朵图形（用于列表）
+      generateMiniFlower(waterCount) {
+        const petalCount = Math.min(12, 4 + Math.floor(waterCount / 2));
+        const petalSize = 6 + waterCount;
+        let petalsHtml = '';
+        
+        for (let i = 0; i < petalCount; i++) {
+          const angle = (i / petalCount) * 360;
+          petalsHtml += `
+            <div class="petal absolute bg-primary" 
+                 style="width: ${petalSize}px; height: ${petalSize}px; transform: rotate(${angle}deg); bottom: 0; right: 0;"></div>
+          `;
+        }
+        
+        if (waterCount > 0) {
+          petalsHtml += `
+            <div class="absolute bg-yellow-300 rounded-full" 
+                 style="width: ${Math.max(4, petalSize / 3)}px; height: ${Math.max(4, petalSize / 3)}px; 
+                        bottom: ${petalSize / 3}px; right: ${petalSize / 3}px;"></div>
+          `;
+        }
+        
+        return petalsHtml;
+      },
+      
+      // 渲染当前选中的花朵详情
+      flower() {
+        const flower = utils.getCurrentFlower();
+        if (!flower) {
+          elements.displayFlowerName.textContent = '请选择一朵花';
+          elements.waterCount.textContent = '0';
+          elements.flower.innerHTML = '';
+          elements.stem.style.height = '16px';
+          elements.growthLog.innerHTML = '<p class="text-gray-500 text-center italic">请选择一朵花查看记录</p>';
+          elements.saveNameBtn.disabled = true;
+          elements.waterBtn.disabled = true;
+          elements.deleteFlowerBtn.disabled = true;
+          return;
+        }
+        
+        // 启用按钮（仅编辑员）
+        if (appData.isEditor) {
+          elements.saveNameBtn.disabled = false;
+          elements.waterBtn.disabled = false;
+          elements.deleteFlowerBtn.disabled = false;
+        }
+        
+        // 更新名称显示
+        elements.displayFlowerName.textContent = flower.name;
+        elements.flowerName.value = flower.name;
+        
+        // 更新浇水次数
+        elements.waterCount.textContent = flower.waterCount;
+        
+        // 渲染花朵图形
+        elements.flower.innerHTML = '';
+        const petalCount = Math.min(12, 4 + Math.floor(flower.waterCount / 2)); // 最多12片花瓣
+        const petalSize = 10 + flower.waterCount * 2; // 花瓣大小随浇水次数增加
+        
+        // 调整花茎高度
+        elements.stem.style.height = `${30 + flower.waterCount * 3}px`;
+        
+        // 创建花瓣
+        for (let i = 0; i < petalCount; i++) {
+          const angle = (i / petalCount) * 360;
+          const petal = document.createElement('div');
+          petal.className = 'petal absolute bg-primary';
+          petal.style.width = `${petalSize}px`;
+          petal.style.height = `${petalSize}px`;
+          petal.style.transform = `rotate(${angle}deg)`;
+          petal.style.bottom = '0';
+          petal.style.right = '0';
+          elements.flower.appendChild(petal);
+        }
+        
+        // 创建花心
+        if (flower.waterCount > 0) {
+          const center = document.createElement('div');
+          center.className = 'absolute bg-yellow-300 rounded-full';
+          center.style.width = `${Math.max(8, petalSize / 3)}px`;
+          center.style.height = `${Math.max(8, petalSize / 3)}px`;
+          center.style.bottom = `${petalSize / 3}px`;
+          center.style.right = `${petalSize / 3}px`;
+          elements.flower.appendChild(center);
+        }
+        
+        // 渲染成长记录
+        this.growthLog();
+      },
+      
+      // 渲染成长记录
+      growthLog() {
+        const flower = utils.getCurrentFlower();
+        if (!flower) return;
+        
+        elements.growthLog.innerHTML = '';
+        
+        if (flower.growthLog.length === 0) {
+          elements.growthLog.innerHTML = '<p class="text-gray-500 text-center italic">暂无记录</p>';
+          return;
+        }
+        
+        // 倒序显示（最新的在前面）
+        [...flower.growthLog].reverse().forEach(log => {
+          const logEl = document.createElement('div');
+          logEl.className = 'p-2 bg-gray-50 rounded-md flex justify-between items-center';
+          logEl.innerHTML = `
+            <span>第 ${log.count} 次浇水</span>
+            <span class="text-sm text-gray-500">${utils.formatDate(log.timestamp)}</span>
+          `;
+          elements.growthLog.appendChild(logEl);
+        });
+      },
+      
+      // 渲染花圈列表
+      wreaths() {
+        elements.wreathList.innerHTML = '';
+        
+        if (appData.wreaths.length === 0) {
+          elements.wreathList.innerHTML = '<p class="text-gray-500">暂无花圈</p>';
+          return;
+        }
+        
+        appData.wreaths.forEach(wreath => {
+          const wreathEl = document.createElement('div');
+          wreathEl.className = 'flex items-center gap-1';
+          
+          const buttonEl = document.createElement('button');
+          buttonEl.className = `px-3 py-1 rounded-full text-sm transition ${
+            appData.currentWreathId === wreath.id 
+              ? 'bg-secondary text-white' 
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`;
+          buttonEl.textContent = wreath.name;
+          buttonEl.addEventListener('click', () => {
+            appData.currentWreathId = wreath.id;
+            this.currentWreath();
+            appData.saveData();
+          });
+          
+          // 删除按钮（仅编辑员可见）
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = `text-red-400 hover:text-red-600 p-1 rounded-full editor-only ${appData.isEditor ? '' : 'hidden'}`;
+          deleteBtn.innerHTML = '<i class="fa fa-times text-xs"></i>';
+          deleteBtn.title = '删除花圈';
+          deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (confirm(`确定要删除花圈"${wreath.name}"吗？`)) {
+              appData.deleteWreath(wreath.id);
+              this.wreaths();
+              this.currentWreath();
+              this.wreathStats();
+            }
+          });
+          
+          wreathEl.appendChild(buttonEl);
+          if (appData.isEditor) {
+            wreathEl.appendChild(deleteBtn);
+          }
+          elements.wreathList.appendChild(wreathEl);
+        });
+      },
+      
+      // 渲染花朵选择下拉框
+      flowerSelect() {
+        elements.flowerToAdd.innerHTML = '<option value="">选择要添加的花...</option>';
+        
+        appData.flowers.forEach(flower => {
+          const option = document.createElement('option');
+          option.value = flower.id;
+          option.textContent = flower.name;
+          elements.flowerToAdd.appendChild(option);
+        });
+      },
+      
+      // 渲染当前选中的花圈
+      currentWreath() {
+        const wreath = utils.getCurrentWreath();
+        elements.currentWreathName.textContent = wreath ? wreath.name : '请选择一个花圈';
+        
+        // 显示/隐藏编辑员功能
+        elements.deleteWreathBtn.classList.toggle('hidden', !appData.isEditor || !wreath);
+        
+        // 启用/禁用添加按钮（仅编辑员）
+        if (appData.isEditor) {
+          elements.addFlowerToWreathBtn.disabled = !wreath;
+          elements.addScoreToWreathBtn.disabled = !wreath;
+        }
+        
+        // 渲染花圈中的花朵
+        elements.flowersInWreath.innerHTML = '';
+        
+        if (!wreath) {
+          elements.flowersInWreath.innerHTML = '<p class="text-gray-500 text-center italic">请选择一个花圈</p>';
+          elements.flowerCountInWreath.textContent = '0';
+          elements.scoreLog.innerHTML = '<p class="text-gray-500 text-center italic">暂无分数记录</p>';
+          return;
+        }
+        
+        // 显示花朵数量
+        elements.flowerCountInWreath.textContent = wreath.flowers.length;
+        
+        // 渲染花圈中的花朵
+        if (wreath.flowers.length === 0) {
+          elements.flowersInWreath.innerHTML = '<p class="text-gray-500 text-center italic">花圈为空</p>';
+        } else {
+          wreath.flowers.forEach(item => {
+            const flower = appData.flowers.find(f => f.id === item.flowerId);
+            if (!flower) return;
+            
+            const flowerEl = document.createElement('div');
+            flowerEl.className = 'p-3 bg-gray-50 rounded-lg flex justify-between items-center';
+            
+            // 编辑员可见删除按钮
+            const deleteButton = appData.isEditor ? `
+              <button class="remove-flower-btn text-red-500 hover:text-red-600" data-id="${item.id}">
+                <i class="fa fa-times"></i>
+              </button>
+            ` : '';
+            
+            flowerEl.innerHTML = `
+              <div>
+                <div class="font-medium">${flower.name}</div>
+                <div class="text-sm text-gray-500">浇水 ${flower.waterCount} 次</div>
+              </div>
+              ${deleteButton}
+            `;
+            elements.flowersInWreath.appendChild(flowerEl);
+            
+            // 添加移除花朵事件（仅编辑员）
+            if (appData.isEditor) {
+              flowerEl.querySelector('.remove-flower-btn')?.addEventListener('click', () => {
+                wreath.flowers = wreath.flowers.filter(i => i.id !== item.id);
+                this.currentWreath();
+                appData.saveData();
+              });
+            }
+          });
+        }
+        
+        // 渲染分数记录
+        this.scoreLog(wreath);
+      },
+      
+      // 渲染分数记录（增加删除功能）
+      scoreLog(wreath) {
+        elements.scoreLog.innerHTML = '';
+        
+        if (!wreath || !wreath.scoreLogs || wreath.scoreLogs.length === 0) {
+          elements.scoreLog.innerHTML = '<p class="text-gray-500 text-center italic">暂无分数记录</p>';
+          return;
+        }
+        
+        // 倒序显示（最新的在前面）
+        [...wreath.scoreLogs].reverse().forEach((log, index) => {
+          const logEl = document.createElement('div');
+          logEl.className = 'p-2 bg-gray-50 rounded-md flex justify-between items-center';
+          
+          // 编辑员可见删除按钮
+          const deleteButton = appData.isEditor ? `
+            <button class="delete-score-btn text-red-400 hover:text-red-600 ml-2" data-id="${log.id}">
+              <i class="fa fa-trash-o"></i>
+            </button>
+          ` : '';
+          
+          // 显示第几次记录和分数
+          logEl.innerHTML = `
+            <div class="flex items-center">
+              <span>第 ${wreath.scoreLogs.length - index} 次: ${log.score} 分</span>
+              ${deleteButton}
+            </div>
+            <span class="text-sm text-gray-500">${utils.formatDateTime(log.dateTime)}</span>
+          `;
+          elements.scoreLog.appendChild(logEl);
+          
+          // 添加删除分数事件（仅编辑员）
+          if (appData.isEditor) {
+            logEl.querySelector('.delete-score-btn')?.addEventListener('click', () => {
+              if (appData.deleteScoreFromWreath(log.id)) {
+                this.currentWreath();
+                this.wreathStats();
+              }
+            });
+          }
+        });
+      },
+      
+      // 渲染花朵排名
+      flowerRanking() {
+        elements.flowerRanking.innerHTML = '';
+        
+        if (appData.flowers.length === 0) {
+          elements.flowerRanking.innerHTML = '<p class="text-gray-500 text-center italic">暂无花朵数据</p>';
+          return;
+        }
+        
+        // 按浇水次数排序（降序）
+        const sortedFlowers = [...appData.flowers].sort((a, b) => b.waterCount - a.waterCount);
+        
+        sortedFlowers.forEach((flower, index) => {
+          const rankEl = document.createElement('div');
+          rankEl.className = 'p-3 bg-gray-50 rounded-lg flex items-center gap-3';
+          
+          // 前三名显示奖牌图标
+          let rankIcon = '';
+          if (index === 0) {
+            rankIcon = '<i class="fa fa-trophy text-yellow-500 text-xl"></i>';
+          } else if (index === 1) {
+            rankIcon = '<i class="fa fa-trophy text-gray-400 text-xl"></i>';
+          } else if (index === 2) {
+            rankIcon = '<i class="fa fa-trophy text-amber-700 text-xl"></i>';
+          } else {
+            rankIcon = `<span class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium">${index + 1}</span>`;
+          }
+          
+          rankEl.innerHTML = `
+            ${rankIcon}
+            <div class="flex-1">
+              <div class="font-medium">${flower.name}</div>
+              <div class="text-sm text-gray-500">浇水 ${flower.waterCount} 次</div>
+            </div>
+            <div class="w-16 h-16 flex items-center justify-center">
+              <div class="relative">
+                <div class="flower-pot w-8 h-5 bg-amber-700 mx-auto"></div>
+                <div class="w-0.5 h-6 bg-green-600 mx-auto -mt-0.5"></div>
+                <div class="relative -mt-1">
+                  ${this.generateMiniFlower(flower.waterCount)}
+                </div>
+              </div>
+            </div>
+          `;
+          
+          elements.flowerRanking.appendChild(rankEl);
+        });
+      },
+      
+      // 渲染花圈统计
+      wreathStats() {
+        elements.wreathStats.innerHTML = '';
+        
+        if (appData.wreaths.length === 0) {
+          elements.wreathStats.innerHTML = '<p class="text-gray-500 text-center italic">暂无花圈数据</p>';
+          return;
+        }
+        
+        appData.wreaths.forEach(wreath => {
+          // 计算总分数
+          const totalScore = wreath.scoreLogs?.reduce((sum, log) => sum + parseInt(log.score), 0) || 0;
+          
+          const statEl = document.createElement('div');
+          statEl.className = 'p-3 bg-gray-50 rounded-lg';
+          statEl.innerHTML = `
+            <div class="font-medium mb-1">${wreath.name}</div>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-500">花朵数量:</span>
+                <span class="font-medium">${wreath.flowers.length}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">分数记录:</span>
+                <span class="font-medium">${wreath.scoreLogs?.length || 0}</span>
+              </div>
+              <div class="flex justify-between col-span-2 mt-1 pt-1 border-t border-gray-100">
+                <span class="text-gray-500">总分数:</span>
+                <span class="font-semibold text-secondary">${totalScore}</span>
+              </div>
+            </div>
+          `;
+          
+          elements.wreathStats.appendChild(statEl);
+        });
+      },
+      
+      // 更新编辑员权限相关UI
+      updateEditorUI() {
+        // 显示/隐藏编辑员专用按钮
+        document.querySelectorAll('.editor-only').forEach(el => {
+          el.classList.toggle('hidden', !appData.isEditor);
+        });
+        
+        // 重新渲染当前页面
+        if (elements.flowerSection.classList.contains('hidden') === false) {
+          this.flower();
+        } else if (elements.wreathSection.classList.contains('hidden') === false) {
+          this.currentWreath();
+        }
+      }
+    };
+
+    // 事件监听
+    function setupEventListeners() {
+      // 导航切换
+      elements.flowerBtn.addEventListener('click', () => {
+        elements.flowerSection.classList.remove('hidden');
+        elements.wreathSection.classList.add('hidden');
+        elements.rankingSection.classList.add('hidden');
+        
+        elements.flowerBtn.className = 'px-3 py-1.5 rounded-md bg-primary/10 text-primary font-medium hover:bg-primary/20 transition';
+        elements.wreathBtn.className = 'px-3 py-1.5 rounded-md bg-white text-dark font-medium hover:bg-gray-100 transition';
+        elements.rankingBtn.className = 'px-3 py-1.5 rounded-md bg-white text-dark font-medium hover:bg-gray-100 transition';
+        
+        render.flower();
+      });
+      
+      elements.wreathBtn.addEventListener('click', () => {
+        elements.flowerSection.classList.add('hidden');
+        elements.wreathSection.classList.remove('hidden');
+        elements.rankingSection.classList.add('hidden');
+        
+        elements.flowerBtn.className = 'px-3 py-1.5 rounded-md bg-white text-dark font-medium hover:bg-gray-100 transition';
+        elements.wreathBtn.className = 'px-3 py-1.5 rounded-md bg-secondary/10 text-secondary font-medium hover:bg-secondary/20 transition';
+        elements.rankingBtn.className = 'px-3 py-1.5 rounded-md bg-white text-dark font-medium hover:bg-gray-100 transition';
+        
+        render.currentWreath();
+      });
+      
+      elements.rankingBtn.addEventListener('click', () => {
+        elements.flowerSection.classList.add('hidden');
+        elements.wreathSection.classList.add('hidden');
+        elements.rankingSection.classList.remove('hidden');
+        
+        elements.flowerBtn.className = 'px-3 py-1.5 rounded-md bg-white text-dark font-medium hover:bg-gray-100 transition';
+        elements.wreathBtn.className = 'px-3 py-1.5 rounded-md bg-white text-dark font-medium hover:bg-gray-100 transition';
+        elements.rankingBtn.className = 'px-3 py-1.5 rounded-md bg-accent/10 text-accent font-medium hover:bg-accent/20 transition';
+        
+        render.flowerRanking();
+        render.wreathStats();
+      });
+      
+      // 花朵管理
+      elements.addFlowerBtn.addEventListener('click', () => {
+        appData.addNewFlower();
+        render.allFlowersList(elements.flowerSearch.value);
+        render.flower();
+        render.flowerSelect();
+        render.flowerRanking();
+      });
+      
+      elements.saveNameBtn.addEventListener('click', () => {
+        const flower = utils.getCurrentFlower();
+        if (flower && elements.flowerName.value.trim()) {
+          flower.name = elements.flowerName.value.trim();
+          appData.saveData();
+          render.flower();
+          render.allFlowersList(elements.flowerSearch.value);
+          render.flowerSelect();
+          render.flowerRanking();
+        }
+      });
+      
+      elements.waterBtn.addEventListener('click', () => {
+        const flower = utils.getCurrentFlower();
+        if (flower) {
+          flower.waterCount++;
+          flower.growthLog.push({
+            timestamp: new Date().toISOString(),
+            count: flower.waterCount
+          });
+          
+          // 添加生长动画
+          elements.flower.classList.add('grow-animation');
+          setTimeout(() => {
+            elements.flower.classList.remove('grow-animation');
+          }, 500);
+          
+          appData.saveData();
+          render.flower();
+          render.allFlowersList(elements.flowerSearch.value);
+          render.flowersList();
+          render.flowerRanking();
+        }
+      });
+      
+      elements.deleteFlowerBtn.addEventListener('click', () => {
+        const flower = utils.getCurrentFlower();
+        if (flower && confirm(`确定要删除花朵"${flower.name}"吗？`)) {
+          appData.deleteFlower(flower.id);
+          render.allFlowersList(elements.flowerSearch.value);
+          render.flower();
+          render.flowerSelect();
+          render.flowerRanking();
+          render.wreathStats();
+        }
+      });
+      
+      // 花圈管理
+      elements.addWreathBtn.addEventListener('click', () => {
+        const name = elements.wreathName.value.trim();
+        if (name) {
+          appData.addNewWreath(name);
+          elements.wreathName.value = '';
+          render.wreaths();
+          render.currentWreath();
+          render.wreathStats();
+        }
+      });
+      
+      elements.deleteWreathBtn.addEventListener('click', () => {
+        const wreath = utils.getCurrentWreath();
+        if (wreath && confirm(`确定要删除花圈"${wreath.name}"吗？`)) {
+          appData.deleteWreath(wreath.id);
+          render.wreaths();
+          render.currentWreath();
+          render.wreathStats();
+        }
+      });
+      
+      elements.addFlowerToWreathBtn.addEventListener('click', () => {
+        const flowerId = elements.flowerToAdd.value;
+        if (flowerId) {
+          if (appData.addFlowerToWreath(flowerId)) {
+            render.currentWreath();
+            render.wreathStats();
+          }
+        }
+      });
+      
+      elements.addScoreToWreathBtn.addEventListener('click', () => {
+        const score = parseInt(elements.wreathScoreToAdd.value);
+        if (score && score > 0) {
+          const dateTime = elements.scoreDateTime.value;
+          appData.addScoreToWreath(score, dateTime);
+          elements.wreathScoreToAdd.value = '';
+          render.currentWreath();
+          render.wreathStats();
+        }
+      });
+      
+      // 花朵搜索
+      elements.flowerSearch.addEventListener('input', (e) => {
+        render.allFlowersList(e.target.value);
+      });
+      
+      // 编辑员认证
+      elements.editorBtn.addEventListener('click', () => {
+        if (appData.isEditor) {
+          // 已登录，显示退出确认
+          if (confirm('确定要退出编辑员模式吗？')) {
+            appData.isEditor = false;
+            appData.saveData();
+            render.updateEditorUI();
+          }
+        } else {
+          // 未登录，显示登录模态框
+          elements.editorModal.classList.remove('hidden');
+          elements.editorPassword.value = '';
+          elements.editorPassword.focus();
+        }
+      });
+      
+      elements.confirmEditorBtn.addEventListener('click', () => {
+        const password = elements.editorPassword.value;
+        if (appData.verifyEditorPassword(password)) {
+          elements.editorModal.classList.add('hidden');
+          render.updateEditorUI();
+        } else {
+          alert('密码错误，请重试');
+        }
+      });
+      
+      elements.cancelEditorBtn.addEventListener('click', () => {
+        elements.editorModal.classList.add('hidden');
+      });
+      
+      // 点击模态框外部关闭
+      elements.editorModal.addEventListener('click', (e) => {
+        if (e.target === elements.editorModal) {
+          elements.editorModal.classList.add('hidden');
+        }
+      });
+      
+      // 设置默认日期时间为当前时间
+      elements.scoreDateTime.value = new Date().toISOString().slice(0, 16);
+    }
+
+    // 初始化应用
+    function initApp() {
+      appData.loadData();
+      setupEventListeners();
+      
+      // 初始化渲染
+      render.allFlowersList();
+      render.flower();
+      render.wreaths();
+      render.currentWreath();
+      render.flowerSelect();
+      render.flowerRanking();
+      render.wreathStats();
+      
+      // 更新编辑员UI
+      render.updateEditorUI();
+    }
+
+    // 启动应用
+    initApp();
+  </script>
+</body>
+</html>
